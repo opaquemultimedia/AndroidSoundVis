@@ -63,7 +63,7 @@ void TestFileCreation()
     }
 }
 
-void TestFolderSearch(const FString& InFilePath, )
+void TestFolderSearch(const FString& InFilePath, TArray<FString>& OutSoundFileNamesWithPath, TArray<FString>& OutSoundFileNamesWithoutPath)
 {
     DIR *dp;
     struct dirent *ep;
@@ -75,6 +75,19 @@ void TestFolderSearch(const FString& InFilePath, )
         {
             //puts (ep->d_name);
             UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::TestFolderSearch; Success! File read. Name: %s"), ANSI_TO_TCHAR(ep->d_name));
+            
+            
+            FString FileName = FString(ANSI_TO_TCHAR(ep->d_name));
+            
+            //Add values to the arrays if the filename contains .ogg
+            //@TODO: Change this to properly inspect the suffix
+            if(FileName.Contains(".ogg"))
+            {
+                OutSoundFileNamesWithPath.Add(InFilePath + ANSI_TO_TCHAR(ep->d_name));
+                //FileName.FString::Split(FString("."), &FileName, nullptr, ESearchCase::IgnoreCase);
+                OutSoundFileNamesWithoutPath.Add(FileName);
+            }
+            
         }
         (void) closedir (dp);
     }
@@ -481,7 +494,7 @@ void USoundVisComponent::BP_LoadAllSoundFileNamesFromHD(bool& bLoaded, const FSt
 	}
     
     //@todo: Remove this test;
-    TestFolderSearch(FinalPath);
+    TestFolderSearch(FinalPath, OutSoundFileNamesWithPath, OutSoundFileNamesWithoutPath);
 
 	TArray<FString> DirectoriesToSkip;
 
