@@ -6,7 +6,9 @@
 
 #include <fstream>
 #include <vector>
+#include <stdio.h>
 #include <dirent.h>
+#include <sys/types.h>
 #include "Sound/SoundWave.h"
 #include "AudioDevice.h"
 #include "Runtime/Engine/Public/VorbisAudioInfo.h"
@@ -61,6 +63,29 @@ void TestFileCreation()
     }
 }
 
+void TestFolderSearch(const FString& InFilePath, )
+{
+    DIR *dp;
+    struct dirent *ep;
+    
+    dp = opendir (TCHAR_TO_ANSI(*InFilePath));
+    if (dp != NULL)
+    {
+        while ((ep = readdir (dp)))
+        {
+            //puts (ep->d_name);
+            UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::TestFolderSearch; Success! File read. Name: %s"), ANSI_TO_TCHAR(ep->d_name));
+        }
+        (void) closedir (dp);
+    }
+    else
+    {
+        //perror ("Couldn't open the directory");
+        UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::TestFolderSearch; Error: Could not open directory."));
+    }
+
+}
+
 void TestFileReading()
 {
     std::ifstream file("/sdcard/Songs/ACDC_-_Back_In_Black-sample.ogg", std::ios::binary | std::ios::ate);
@@ -86,7 +111,7 @@ void TestFileReading()
 void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 {
     //@TODO: Remove this test
-    TestFileReading();
+    //TestFileReading();
     
 	// Create new SoundWave Object
 	CompressedSoundWaveRef = NewObject<USoundWave>(USoundWave::StaticClass());
@@ -454,6 +479,9 @@ void USoundVisComponent::BP_LoadAllSoundFileNamesFromHD(bool& bLoaded, const FSt
 	{
 		FinalPath = FPaths::ConvertRelativePathToFull(FPaths::GameDir()) + InDirectoryPath;
 	}
+    
+    //@todo: Remove this test;
+    TestFolderSearch(FinalPath);
 
 	TArray<FString> DirectoriesToSkip;
 
