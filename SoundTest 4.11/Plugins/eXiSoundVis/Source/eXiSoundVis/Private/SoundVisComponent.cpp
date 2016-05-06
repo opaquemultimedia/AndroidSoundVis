@@ -99,22 +99,38 @@ void TestFolderSearch(const FString& InFilePath, TArray<FString>& OutSoundFileNa
 
 }
 
-void TestFileReading()
+bool AndroidLoadFileToArray(TArray<uint8>& Result, FString FilePath)
 {
-    std::ifstream file("/sdcard/Songs/ACDC_-_Back_In_Black-sample.ogg", std::ios::binary | std::ios::ate);
+    //"/sdcard/Songs/ACDC_-_Back_In_Black-sample.ogg"
+    std::ifstream file(TCHAR_TO_ANSI(*FilePath), std::ios::binary | std::ios::ate);
     std::streamsize size = file.tellg();
     file.seekg(0, std::ios::beg);
     
+    //Reserve space in the buffers
     std::vector<char> buffer(size);
+    Result = TArray<uint8>();
+    Result.Reserve(buffer.size());
+    
+    
     if (file.read(buffer.data(), size))
     {
+        //Atempt to read in the data
+        
+        //Copy data to TArray
+        for(int i = 0; i < buffer.size(); i++)
+        {
+            Result.Add(buffer[i]);
+        }
+        
         /* worked! */
         UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::TestFileReading; Success! File read. First char: %c"), buffer[0]);
+        return true;
     }
     else
     {
         //Did not work
         UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::TestFileReading; Error: File not read. "));
+        return false;
     }
 }
 
@@ -123,8 +139,6 @@ void TestFileReading()
 
 void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 {
-    //@TODO: Remove this test
-    //TestFileReading();
     
 	// Create new SoundWave Object
 	CompressedSoundWaveRef = NewObject<USoundWave>(USoundWave::StaticClass());
@@ -146,8 +160,9 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
     PrintLog(TEXT("USoundVisComponent::LoadSoundFileFromHD; About to load file to array"));
     
 	// Load file into RawFile Array
-	bLoaded = FFileHelper::LoadFileToArray(RawFile, InFilePath.GetCharArray().GetData());
-
+	//bLoaded = FFileHelper::LoadFileToArray(RawFile, InFilePath.GetCharArray().GetData());
+    bLoaded = AndroidLoadFileToArray(RawFile, InFilePath);
+    
 	if (bLoaded)
 	{
 		// Fill the SoundData into the SoundWave Object
@@ -493,9 +508,11 @@ void USoundVisComponent::BP_LoadAllSoundFileNamesFromHD(bool& bLoaded, const FSt
 		FinalPath = FPaths::ConvertRelativePathToFull(FPaths::GameDir()) + InDirectoryPath;
 	}
     
-    //@todo: Remove this test;
+    //@NOTE: On the Android platform, the FPlatformFileManager atomic classes fail during construction.
+    //A C-class only workaround has been constructed below.
     TestFolderSearch(FinalPath, OutSoundFileNamesWithPath, OutSoundFileNamesWithoutPath);
-
+    
+    /*
 	TArray<FString> DirectoriesToSkip;
 
 	IPlatformFile &PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
@@ -536,7 +553,7 @@ void USoundVisComponent::BP_LoadAllSoundFileNamesFromHD(bool& bLoaded, const FSt
 			OutSoundFileNamesWithoutPath.Add(FileName);
 		}
 	}
-
+     */
 	bLoaded = true;
 }
 
