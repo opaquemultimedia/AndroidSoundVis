@@ -138,7 +138,7 @@ public:
 
 	/// Function to decompress the compressed Data that comes with the .ogg file
 
-	void GetPCMDataFromFile(class USoundWave* InSoundWave);
+	void GetPCMDataFromFile(class USoundWave* InSoundWave, FByteBulkData* BulkData);
 
 	/// Function to calculate the frequency spectrum
 

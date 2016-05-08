@@ -108,7 +108,7 @@ bool AndroidLoadFileToArray(TArray<uint8>& Result, FString FilePath)
     
     //Reserve space in the buffers
     std::vector<char> buffer(size);
-    Result = TArray<uint8>();
+    //Result = TArray<uint8>();
     Result.Reserve(buffer.size());
     
     
@@ -154,7 +154,7 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 	bool bLoaded = false;
 
 	// TArray that holds the binary and encoded Sound data
-	TArray<uint8> RawFile;
+	TArray<uint8> RawFile = TArray<uint8>();
     
     
     PrintLog(TEXT("USoundVisComponent::LoadSoundFileFromHD; About to load file to array"));
@@ -162,6 +162,9 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 	// Load file into RawFile Array
 	//bLoaded = FFileHelper::LoadFileToArray(RawFile, InFilePath.GetCharArray().GetData());
     bLoaded = AndroidLoadFileToArray(RawFile, InFilePath);
+    
+    
+    UE_LOG(LogeXiSoundVis, Warning,TEXT("Elements in array: %d"), RawFile.Num() );
     
 	if (bLoaded)
 	{
@@ -179,13 +182,20 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 
 		// Get Pointer to the Compressed OGG Data
 		FByteBulkData* BulkData = &CompressedSoundWaveRef->CompressedFormatData.GetFormat(FName("OGG"));
-
+        
+        if(BulkData == nullptr)
+        {
+            PrintError(TEXT("USoundVisComponent::LoadSoundFileFromHD; Bulk data pointer is null!"));
+        }
+        
 		// Set the Lock of the BulkData to ReadWrite
 		BulkData->Lock(LOCK_READ_WRITE);
 
+        //@NOTE: New theory: FMemory is also acting up on Android?
 		// Copy compressed RawFile Data to the Address of the OGG Data of the SW File
-		FMemory::Memmove(BulkData->Realloc(RawFile.Num()), RawFile.GetData(), RawFile.Num());
-
+        //FMemory::Memmove(BulkData->Realloc(RawFile.Num()), RawFile.GetData(), RawFile.Num());
+        memmove(BulkData->Realloc(RawFile.Num()), RawFile.GetData(), RawFile.Num());
+        
 		// Unlock the BulkData again
 		BulkData->Unlock();
 	}
@@ -197,11 +207,21 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 	}
 
 	// Fill the PCMSampleBuffer
-	GetPCMDataFromFile(CompressedSoundWaveRef);
+	GetPCMDataFromFile(CompressedSoundWaveRef, &CompressedSoundWaveRef->CompressedFormatData.GetFormat(FName("OGG")));
 }
 
 bool USoundVisComponent::FillSoundWaveInfo(USoundWave* InSoundWave, TArray<uint8>* InRawFile)
 {
+    
+    if(InRawFile != nullptr)
+    {
+        PrintLog(TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave pointer is not nullpointer."));
+    }
+    else
+    {
+        PrintError(TEXT("USoundVisComponent::FillSoundWaveInfo Passed SoundWave pointer is a nullptr!"));
+    }
+    
 	// Info Structs
 	FSoundQualityInfo SoundQualityInfo;
 	FVorbisAudioInfo VorbisAudioInfo;
@@ -209,6 +229,7 @@ bool USoundVisComponent::FillSoundWaveInfo(USoundWave* InSoundWave, TArray<uint8
 	// Save the Info into SoundQualityInfo
 	if (!VorbisAudioInfo.ReadCompressedInfo(InRawFile->GetData(), InRawFile->Num(), &SoundQualityInfo))
 	{
+        PrintError(TEXT("USoundVisComponent::FillSoundWaveInfo VorbisAudioInfo could not read compressed information!"));
 		return false;
 	}
 
@@ -220,12 +241,16 @@ bool USoundVisComponent::FillSoundWaveInfo(USoundWave* InSoundWave, TArray<uint8
 	InSoundWave->RawPCMDataSize = SoundQualityInfo.SampleDataSize;
 	InSoundWave->SampleRate = SoundQualityInfo.SampleRate;
 
+    /*@NOTE: Do we also need to add the CompressionName here?
+    Doesn't seem to be needed for other platforms but Android construction will fail if the structure doesn't have it*/
+    InSoundWave->CompressionName = FName(TEXT("OGG"));
+    
 	return true;
 }
 
 /// Function to decompress the compressed Data that comes with the .ogg file
 
-void USoundVisComponent::GetPCMDataFromFile(USoundWave* InSoundWave)
+void USoundVisComponent::GetPCMDataFromFile(USoundWave* InSoundWave, FByteBulkData* BulkData)
 {
 	if (InSoundWave == nullptr)	{
 		
@@ -246,7 +271,8 @@ void USoundVisComponent::GetPCMDataFromFile(USoundWave* InSoundWave)
 
 		if (AudioDevice) {
 
-			InSoundWave->InitAudioResource(AudioDevice->GetRuntimeFormat(InSoundWave));
+            //@Note: Attempt to initialize with bulk data rather than relying on streaming (?)
+			InSoundWave->InitAudioResource(*BulkData);
 
 			PrintLog(TEXT("Creating new DecompressWorker."));
 				
@@ -268,6 +294,8 @@ void USoundVisComponent::CalculateFrequencySpectrum(USoundWave* InSoundWaveRef, 
 
 	const int32 NumChannels = InSoundWaveRef->NumChannels;
 	const int32 SampleRate = InSoundWaveRef->SampleRate;
+
+    UE_LOG(LogeXiSoundVis, Warning,TEXT("Number of channels: %d"), NumChannels );
 
 	// Make sure the Number of Channels is correct
 	if (NumChannels > 0 && NumChannels <= 2)
