@@ -113,17 +113,35 @@ uint32 FAudioDecompressWorker::Run()
 			SoundWaveRef->SampleRate = QualityInfo.SampleRate;
 			SoundWaveRef->NumChannels = QualityInfo.NumChannels;
 
+            
+            UE_LOG(LogeXiSoundVis, Warning,TEXT("FAudioDecompressWorker::Run; Sample rate: %d"), QualityInfo.SampleRate );
+            
+            UE_LOG(LogeXiSoundVis, Warning,TEXT("FAudioDecompressWorker::Run; Number of channels: %d"), QualityInfo.NumChannels );
+            
+            UE_LOG(LogeXiSoundVis, Warning,TEXT("FAudioDecompressWorker::Run; SoundWave duration is: %f"), QualityInfo.Duration );
+            
+            UE_LOG(LogeXiSoundVis, Warning,TEXT("FAudioDecompressWorker::Run; SoundWave Sample data size is: %d"), QualityInfo.SampleDataSize );
+            
+            
+            //@NOTE: Why does this check need to be done? And what is the QualityInfo vs SoundWaveRef difference between Android and Mac?
 			if (QualityInfo.Duration > 0.0f)
 			{
 				SoundWaveRef->Duration = QualityInfo.Duration;
 			}
-
+            
 			const uint32 PCMBufferSize = SoundWaveRef->Duration * SoundWaveRef->SampleRate * SoundWaveRef->NumChannels;
             
-            
+            //Should perhaps use one of the Procedural android functions instead here?
 			SoundWaveRef->CachedRealtimeFirstBuffer = new uint8[PCMBufferSize * 2];
+            
+            //@NOTE: Do we need to update the platform data after this perhaps?
+            //SoundWaveRef->UpdatePlatformData();
+            
+            
             UE_LOG(LogeXiSoundVis, Warning,TEXT("FAudioDecompressWorker::Run; PCM Buffer size: %d"), PCMBufferSize );
-
+            
+            //Does this file support streaming?
+            
 			AudioInfo->SeekToTime(0.0f);
 			AudioInfo->ReadCompressedData(SoundWaveRef->CachedRealtimeFirstBuffer, false, PCMBufferSize * 2);
 		}

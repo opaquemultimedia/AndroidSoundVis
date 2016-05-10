@@ -235,12 +235,17 @@ bool USoundVisComponent::FillSoundWaveInfo(USoundWave* InSoundWave, TArray<uint8
 
 	// Fill in all the Data we have
 	InSoundWave->DecompressionType = EDecompressionType::DTYPE_RealTime;
-	InSoundWave->SoundGroup = ESoundGroup::SOUNDGROUP_Default;
+    InSoundWave->SoundGroup = ESoundGroup::SOUNDGROUP_Default;
 	InSoundWave->NumChannels = SoundQualityInfo.NumChannels;
 	InSoundWave->Duration = SoundQualityInfo.Duration;
 	InSoundWave->RawPCMDataSize = SoundQualityInfo.SampleDataSize;
 	InSoundWave->SampleRate = SoundQualityInfo.SampleRate;
 
+    UE_LOG(LogeXiSoundVis, Warning,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave NumChannels is: %d"), InSoundWave->NumChannels );
+    UE_LOG(LogeXiSoundVis, Warning,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave duration is: %f"), InSoundWave->Duration );
+    UE_LOG(LogeXiSoundVis, Warning,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave RawPCMDataSize is: %d"), InSoundWave->RawPCMDataSize );
+    UE_LOG(LogeXiSoundVis, Warning,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave SampleRate is: %d"), InSoundWave->SampleRate );
+    
     /*@NOTE: Do we also need to add the CompressionName here?
     Doesn't seem to be needed for other platforms but Android construction will fail if the structure doesn't have it*/
     InSoundWave->CompressionName = FName(TEXT("OGG"));
@@ -273,11 +278,12 @@ void USoundVisComponent::GetPCMDataFromFile(USoundWave* InSoundWave, FByteBulkDa
 
             //@Note: Attempt to initialize with bulk data rather than relying on streaming (?)
 			InSoundWave->InitAudioResource(*BulkData);
-
+            
 			PrintLog(TEXT("Creating new DecompressWorker."));
 				
 			// Creates a new DecompressWorker and starts it
 			InitNewDecompressTask(InSoundWave);
+            
 		}
 		else {
 
@@ -295,7 +301,7 @@ void USoundVisComponent::CalculateFrequencySpectrum(USoundWave* InSoundWaveRef, 
 	const int32 NumChannels = InSoundWaveRef->NumChannels;
 	const int32 SampleRate = InSoundWaveRef->SampleRate;
 
-    UE_LOG(LogeXiSoundVis, Warning,TEXT("Number of channels: %d"), NumChannels );
+    //UE_LOG(LogeXiSoundVis, Warning,TEXT("Number of channels: %d"), NumChannels );
 
 	// Make sure the Number of Channels is correct
 	if (NumChannels > 0 && NumChannels <= 2)
@@ -627,7 +633,8 @@ void USoundVisComponent::BP_StartCalculatingFrequencySpectrum(USoundWave* InSoun
 		GetWorld()->GetTimerManager().SetTimer(SoundPlayerTimer, 99999.f, false);
 
 		// Start the Calculation Loop
-		HandleFrequencySpectrumCalculation();
+		//@NOTE: Test to see if player is slow on Android outside of calculation
+        HandleFrequencySpectrumCalculation();
 	}
 	else {
 		PrintWarning(TEXT("AudioComponent is already Playing. Please stop it first!"));
