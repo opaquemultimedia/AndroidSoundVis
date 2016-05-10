@@ -7,7 +7,11 @@
 #include <fstream>
 #include <vector>
 #include <stdio.h>
+
+#if PLATFORM_ANDROID
 #include <dirent.h>
+#endif
+
 #include <sys/types.h>
 #include "Sound/SoundWave.h"
 #include "AudioDevice.h"
@@ -63,7 +67,8 @@ void TestFileCreation()
     }
 }
 
-void TestFolderSearch(const FString& InFilePath, TArray<FString>& OutSoundFileNamesWithPath, TArray<FString>& OutSoundFileNamesWithoutPath)
+#if PLATFORM_ANDROID
+void AndroidFolderSearch(const FString& InFilePath, TArray<FString>& OutSoundFileNamesWithPath, TArray<FString>& OutSoundFileNamesWithoutPath)
 {
     DIR *dp;
     struct dirent *ep;
@@ -94,7 +99,7 @@ void TestFolderSearch(const FString& InFilePath, TArray<FString>& OutSoundFileNa
     else
     {
         //perror ("Couldn't open the directory");
-        UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::TestFolderSearch; Error: Could not open directory."));
+        UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::AndroidFolderSearch; Error: Could not open directory."));
     }
 
 }
@@ -133,7 +138,7 @@ bool AndroidLoadFileToArray(TArray<uint8>& Result, FString FilePath)
         return false;
     }
 }
-
+#endif
 
 /// Functions to load Data from the HardDrive
 
@@ -158,11 +163,13 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
     
     
     PrintLog(TEXT("USoundVisComponent::LoadSoundFileFromHD; About to load file to array"));
-    
+
 	// Load file into RawFile Array
-	//bLoaded = FFileHelper::LoadFileToArray(RawFile, InFilePath.GetCharArray().GetData());
-    bLoaded = AndroidLoadFileToArray(RawFile, InFilePath);
-    
+#if PLATFORM_ANDROID
+	bLoaded = AndroidLoadFileToArray(RawFile, InFilePath);
+#else
+	bLoaded = FFileHelper::LoadFileToArray(RawFile, InFilePath.GetCharArray().GetData());
+#endif
     
     UE_LOG(LogeXiSoundVis, Warning,TEXT("Elements in array: %d"), RawFile.Num() );
     
@@ -542,11 +549,12 @@ void USoundVisComponent::BP_LoadAllSoundFileNamesFromHD(bool& bLoaded, const FSt
 		FinalPath = FPaths::ConvertRelativePathToFull(FPaths::GameDir()) + InDirectoryPath;
 	}
     
+#if PLATFORM_ANDROID
     //@NOTE: On the Android platform, the FPlatformFileManager atomic classes fail during construction.
     //A C-class only workaround has been constructed below.
-    TestFolderSearch(FinalPath, OutSoundFileNamesWithPath, OutSoundFileNamesWithoutPath);
+    AndroidFolderSearch(FinalPath, OutSoundFileNamesWithPath, OutSoundFileNamesWithoutPath);
+#else
     
-    /*
 	TArray<FString> DirectoriesToSkip;
 
 	IPlatformFile &PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
@@ -587,7 +595,9 @@ void USoundVisComponent::BP_LoadAllSoundFileNamesFromHD(bool& bLoaded, const FSt
 			OutSoundFileNamesWithoutPath.Add(FileName);
 		}
 	}
-     */
+     
+#endif
+
 	bLoaded = true;
 }
 
