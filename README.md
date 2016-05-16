@@ -2,7 +2,7 @@
 
 This plugin is an implementation of the [eXiSoundVis plugin for UE4](https://github.com/eXifreXi/eXiSoundVis) which has been altered to allow for use on Android devices. It uses an implementation of Kiss-FFT (see [here](https://github.com/itdaniher/kissfft) for an implementation on Github), and allows for music visualization on the Android platform in real time.
 
-This repository contains a modified version of the plugin, as well as a
+This repository contains a modified version of the plugin, as well as the example project which demonstrates how to use the plugin functions. You will also need to source .obb music files and place them in a known location on your Android device- the Android File Transfer application can be used to achieve this. 
 
 ### Notes:
 - There is a known incompatibility in the case of the Google Project Tango Yellowstone Tablet being used with Unreal Engine 4, which means it is not possible to play .obb files with a 44khz sample rate correctly. This is true of both files loaded at runtime and those imported as assets at build/compile time in UE4. Please be sure to replace any 44khz files with .obbs with a 22khz sample rate, otherwise the .obb files will be played back at an incorrect, slower speed.
