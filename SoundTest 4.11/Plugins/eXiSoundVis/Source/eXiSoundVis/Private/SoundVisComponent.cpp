@@ -39,7 +39,7 @@ void USoundVisComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 	{
 		if (Viewport->Viewport->IsForegroundWindow())
 		{
-			PrintLog(TEXT("Window is in foreground. Resuming!"));
+			PrintLog(TEXT("USoundVisComponent::TickComponent; Window is in foreground. Resuming!"));
 
 			BP_ResumeCalculatingFrequencySpectrum();
 
@@ -48,93 +48,66 @@ void USoundVisComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 	}
 }
 
-//@TODO: Remove this
-void TestFileCreation()
-{
-    FILE* file = fopen("/sdcard/hello.txt","w+");
-    
-    if (file != NULL)
-    {
-        fputs("HELLO WORLD!\n", file);
-        fflush(file);
-        fclose(file);
-        //PrintLog();
-        UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::TestFileCreation; File open for writing succeeded."));
-    }
-    else
-    {
-        UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::TestFileCreation; File open for writing failed!"));
-    }
-}
-
 #if PLATFORM_ANDROID
 void AndroidFolderSearch(const FString& InFilePath, TArray<FString>& OutSoundFileNamesWithPath, TArray<FString>& OutSoundFileNamesWithoutPath)
 {
-    DIR *dp;
-    struct dirent *ep;
+    DIR *Directory;
+    struct dirent *CurrentFile;
     
-    dp = opendir (TCHAR_TO_ANSI(*InFilePath));
-    if (dp != NULL)
+    Directory = opendir (TCHAR_TO_ANSI(*InFilePath));
+    if (Directory != NULL)
     {
-        while ((ep = readdir (dp)))
+        while ((CurrentFile = readdir (Directory)))
         {
-            //puts (ep->d_name);
-            UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::TestFolderSearch; Success! File read. Name: %s"), ANSI_TO_TCHAR(ep->d_name));
+            UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::TestFolderSearch; Success! File read. Name: %s"), ANSI_TO_TCHAR(CurrentFile->d_name));
             
-            
-            FString FileName = FString(ANSI_TO_TCHAR(ep->d_name));
+            FString FileName = FString(ANSI_TO_TCHAR(CurrentFile->d_name));
             
             //Add values to the arrays if the filename contains .ogg
             //@TODO: Change this to properly inspect the suffix
             if(FileName.Contains(".ogg"))
             {
-                OutSoundFileNamesWithPath.Add(InFilePath + ANSI_TO_TCHAR(ep->d_name));
-                //FileName.FString::Split(FString("."), &FileName, nullptr, ESearchCase::IgnoreCase);
+                OutSoundFileNamesWithPath.Add(InFilePath + ANSI_TO_TCHAR(CurrentFile->d_name));
+                //Remove the '.ogg' from the string to display to users
+                FileName.FString::Split(FString("."), &FileName, nullptr, ESearchCase::IgnoreCase);
                 OutSoundFileNamesWithoutPath.Add(FileName);
             }
             
         }
-        (void) closedir (dp);
+        (void) closedir (Directory);
     }
     else
     {
-        //perror ("Couldn't open the directory");
         UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::AndroidFolderSearch; Error: Could not open directory."));
     }
-
 }
 
 bool AndroidLoadFileToArray(TArray<uint8>& Result, FString FilePath)
 {
-    //"/sdcard/Songs/ACDC_-_Back_In_Black-sample.ogg"
-    std::ifstream file(TCHAR_TO_ANSI(*FilePath), std::ios::binary | std::ios::ate);
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
+    std::ifstream File(TCHAR_TO_ANSI(*FilePath), std::ios::binary | std::ios::ate);
+    std::streamsize FileSize = File.tellg();
+    File.seekg(0, std::ios::beg);
     
     //Reserve space in the buffers
-    std::vector<char> buffer(size);
-    //Result = TArray<uint8>();
-    Result.Reserve(buffer.size());
+    std::vector<char> ByteBuffer(FileSize);
+    Result.Reserve(ByteBuffer.size());
     
-    
-    if (file.read(buffer.data(), size))
+    //Attempt to read data to the buffer
+    if (File.read(ByteBuffer.data(), FileSize))
     {
-        //Atempt to read in the data
-        
         //Copy data to TArray
-        for(int i = 0; i < buffer.size(); i++)
+        for(int i = 0; i < ByteBuffer.size(); i++)
         {
-            Result.Add(buffer[i]);
+            Result.Add(ByteBuffer[i]);
         }
         
-        /* worked! */
-        UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::TestFileReading; Success! File read. First char: %c"), buffer[0]);
+        UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::AndroidLoadFileToArray; Compeleted file read."));
         return true;
     }
     else
     {
-        //Did not work
-        UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::TestFileReading; Error: File not read. "));
+        //Could not read the buffers
+        UE_LOG(LogeXiSoundVis, Warning, TEXT("USoundVisComponent::AndroidLoadFileToArray; Error: File not read. "));
         return false;
     }
 }
@@ -151,7 +124,7 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 	// Make sure the SoundWave Object is Valid
 	if (!CompressedSoundWaveRef) {
 
-		PrintError(TEXT("Failed to create new SoundWave Object!"));
+		PrintError(TEXT("USoundVisComponent::LoadSoundFileFromHD; Failed to create new SoundWave Object!"));
 		return;
 	}
 
@@ -160,18 +133,16 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 
 	// TArray that holds the binary and encoded Sound data
 	TArray<uint8> RawFile = TArray<uint8>();
-    
-    
-    PrintLog(TEXT("USoundVisComponent::LoadSoundFileFromHD; About to load file to array"));
 
 	// Load file into RawFile Array
 #if PLATFORM_ANDROID
+    //@NOTE: The FFileHelper class does not function correctly in this manner on Android, so we use a workaround function which directly accesses the files directly.
 	bLoaded = AndroidLoadFileToArray(RawFile, InFilePath);
 #else
 	bLoaded = FFileHelper::LoadFileToArray(RawFile, InFilePath.GetCharArray().GetData());
 #endif
     
-    UE_LOG(LogeXiSoundVis, Warning,TEXT("Elements in array: %d"), RawFile.Num() );
+    UE_LOG(LogeXiSoundVis, Warning,TEXT("USoundVisComponent::LoadSoundFileFromHD; Elements in array: %d"), RawFile.Num() );
     
 	if (bLoaded)
 	{
@@ -182,7 +153,7 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 		}
 		else {
 
-			PrintError(TEXT("RawFile Array is empty! Seams like Sound couldn't be loaded correctly."));
+			PrintError(TEXT("USoundVisComponent::LoadSoundFileFromHD; RawFile Array is empty! Seams like Sound couldn't be loaded correctly."));
 
 			bLoaded = false;
 		}
@@ -198,6 +169,7 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 		// Set the Lock of the BulkData to ReadWrite
 		BulkData->Lock(LOCK_READ_WRITE);
 
+        //@TODO: Investigate whether this can be set back to FMemory::Memmove
         //@NOTE: New theory: FMemory is also acting up on Android?
 		// Copy compressed RawFile Data to the Address of the OGG Data of the SW File
         //FMemory::Memmove(BulkData->Realloc(RawFile.Num()), RawFile.GetData(), RawFile.Num());
@@ -209,7 +181,7 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 
 	if (!bLoaded) {
 
-		PrintError(TEXT("Something went wrong while loading the Sound Data!"));
+		PrintError(TEXT("USoundVisComponent::LoadSoundFileFromHD; Something went wrong while loading the Sound Data!"));
 		return;
 	}
 
@@ -247,16 +219,18 @@ bool USoundVisComponent::FillSoundWaveInfo(USoundWave* InSoundWave, TArray<uint8
 	InSoundWave->Duration = SoundQualityInfo.Duration;
 	InSoundWave->RawPCMDataSize = SoundQualityInfo.SampleDataSize;
 	InSoundWave->SampleRate = SoundQualityInfo.SampleRate;
-
-    UE_LOG(LogeXiSoundVis, Warning,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave NumChannels is: %d"), InSoundWave->NumChannels );
-    UE_LOG(LogeXiSoundVis, Warning,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave duration is: %f"), InSoundWave->Duration );
-    UE_LOG(LogeXiSoundVis, Warning,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave RawPCMDataSize is: %d"), InSoundWave->RawPCMDataSize );
-    UE_LOG(LogeXiSoundVis, Warning,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave SampleRate is: %d"), InSoundWave->SampleRate );
-    
-    /*@NOTE: Do we also need to add the CompressionName here?
-    Doesn't seem to be needed for other platforms but Android construction will fail if the structure doesn't have it*/
+    //@NOTE: The CompressionName variable must also be populated in order to play on Android.
     InSoundWave->CompressionName = FName(TEXT("OGG"));
-    
+
+    //@NOTE: Uncomment the below to observe the file metadata
+    /*
+    UE_LOG(LogeXiSoundVis, Log,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave NumChannels is: %d"), InSoundWave->NumChannels );
+    UE_LOG(LogeXiSoundVis, Log,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave duration is: %f"), InSoundWave->Duration );
+     UE_LOG(LogeXiSoundVis, Log,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave RawPCMDataSize is: %d"), InSoundWave->RawPCMDataSize );
+     UE_LOG(LogeXiSoundVis, Log,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave SampleDataSize is: %d"), InSoundWave->SampleDataSize );
+     UE_LOG(LogeXiSoundVis, Log,TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave SampleRate is: %d"), InSoundWave->SampleRate );
+    */
+
 	return true;
 }
 
@@ -266,13 +240,13 @@ void USoundVisComponent::GetPCMDataFromFile(USoundWave* InSoundWave, FByteBulkDa
 {
 	if (InSoundWave == nullptr)	{
 		
-		PrintError(TEXT("Passed SoundWave pointer is a nullptr!"));
+		PrintError(TEXT("USoundVisComponent::GetPCMDataFromFile; SoundWave pointer is a nullptr!"));
 		return;
 	}
 
 	if (InSoundWave->NumChannels < 1 || InSoundWave->NumChannels > 2) {
 		
-		PrintError(TEXT("SoundWave Object has not the right amount of Channels. Plugin only supports 1 or 2!"));
+		PrintError(TEXT("USoundVisComponent::GetPCMDataFromFile; SoundWave Object has not the right amount of Channels. Plugin only supports 1 or 2!"));
 		return;
 	}
 
@@ -286,7 +260,7 @@ void USoundVisComponent::GetPCMDataFromFile(USoundWave* InSoundWave, FByteBulkDa
             //@Note: Attempt to initialize with bulk data rather than relying on streaming (?)
 			InSoundWave->InitAudioResource(*BulkData);
             
-			PrintLog(TEXT("Creating new DecompressWorker."));
+			PrintLog(TEXT("USoundVisComponent::GetPCMDataFromFile; Creating new DecompressWorker."));
 				
 			// Creates a new DecompressWorker and starts it
 			InitNewDecompressTask(InSoundWave);
@@ -294,7 +268,7 @@ void USoundVisComponent::GetPCMDataFromFile(USoundWave* InSoundWave, FByteBulkDa
 		}
 		else {
 
-			PrintError(TEXT("Couldn't get a valid Pointer to the Main AudioDevice!"));
+			PrintError(TEXT("USoundVisComponent::GetPCMDataFromFile; Couldn't get a valid Pointer to the Main AudioDevice!"));
 			return;
 		}
 	}
@@ -307,8 +281,6 @@ void USoundVisComponent::CalculateFrequencySpectrum(USoundWave* InSoundWaveRef, 
 
 	const int32 NumChannels = InSoundWaveRef->NumChannels;
 	const int32 SampleRate = InSoundWaveRef->SampleRate;
-
-    //UE_LOG(LogeXiSoundVis, Warning,TEXT("Number of channels: %d"), NumChannels );
 
 	// Make sure the Number of Channels is correct
 	if (NumChannels > 0 && NumChannels <= 2)
@@ -334,7 +306,7 @@ void USoundVisComponent::CalculateFrequencySpectrum(USoundWave* InSoundWaveRef, 
 
 			if (SamplesToRead < 0) {
 
-				PrintError(TEXT("Number of SamplesToRead is < 0!"));
+				PrintError(TEXT("USoundVisComponent::CalculateFrequencySpectrum; Number of SamplesToRead is < 0!"));
 				return;
 			}
 
@@ -429,11 +401,11 @@ void USoundVisComponent::CalculateFrequencySpectrum(USoundWave* InSoundWaveRef, 
 			}
 		}
 		else {
-			PrintError(TEXT("InSoundVisData.PCMData is a nullptr!"));
+			PrintError(TEXT("USoundVisComponent::CalculateFrequencySpectrum; InSoundVisData.PCMData is a nullptr!"));
 		}
 	}
 	else {
-		PrintError(TEXT("Number of Channels is < 0!"));
+		PrintError(TEXT("USoundVisComponent::CalculateFrequencySpectrum; Number of Channels is < 0!"));
 	}
 }
 
@@ -472,7 +444,7 @@ void USoundVisComponent::InitNewDecompressTask(USoundWave* InSoundWaveRef)
 		FAudioDecompressWorker::Runnable->InitializeWorker(InSoundWaveRef);
 	}
 	else {
-		PrintLog(TEXT("Worker not finished!"));
+		PrintLog(TEXT("USoundVisComponent::GetFFTInValue; Worker not finished!"));
 	}
 }
 
@@ -487,10 +459,10 @@ void USoundVisComponent::Notify_SoundDecompressed()
 		//..broadcast the result to the Blueprint
 		OnFileLoadCompleted.Broadcast(FAudioDecompressWorker::Runnable->GetSoundWaveRef());
 
-		PrintLog(TEXT("Worker finished!"));
+		PrintLog(TEXT("USoundVisComponent::GetFFTInValue; Worker finished!"));
 	}
 	else {
-		PrintLog(TEXT("Worker is working!"));
+		PrintLog(TEXT("USoundVisComponent::GetFFTInValue; Worker is working!"));
 	}
 }
 
@@ -502,7 +474,7 @@ void USoundVisComponent::HandleFrequencySpectrumCalculation()
 	// If the Window is not in the foreground, make sure to pause everything, so it won't get async!
 	if (!Viewport->Viewport->IsForegroundWindow() && bPauseWhenWindowInBackground)
 	{
-		PrintLog(TEXT("Window is not in foreground. Pausing!"));
+		PrintLog(TEXT("USoundVisComponent::HandleFrequencySpectrumCalculation; Window is not in foreground. Pausing!"));
 
 		BP_PauseCalculatingFrequencySpectrum();
 
@@ -542,7 +514,7 @@ void USoundVisComponent::BP_LoadSoundFileFromHD(const FString InFilePath)
 void USoundVisComponent::BP_LoadAllSoundFileNamesFromHD(bool& bLoaded, const FString InDirectoryPath, const bool bInAbsolutePath, const FString InFileExtension, TArray<FString>& OutSoundFileNamesWithPath, TArray<FString>& OutSoundFileNamesWithoutPath)
 {
 	FString FinalPath = InDirectoryPath;
-    PrintLog(TEXT("Looking for files..."));
+    PrintLog(TEXT("USoundVisComponent::BP_LoadAllSoundFileNamesFromHD; Looking for files..."));
 
 	if (!bInAbsolutePath)
 	{
@@ -551,7 +523,7 @@ void USoundVisComponent::BP_LoadAllSoundFileNamesFromHD(bool& bLoaded, const FSt
     
 #if PLATFORM_ANDROID
     //@NOTE: On the Android platform, the FPlatformFileManager atomic classes fail during construction.
-    //A C-class only workaround has been constructed below.
+    //A workaround which uses C file access methods has been constructed below.
     AndroidFolderSearch(FinalPath, OutSoundFileNamesWithPath, OutSoundFileNamesWithoutPath);
 #else
     
@@ -561,11 +533,11 @@ void USoundVisComponent::BP_LoadAllSoundFileNamesFromHD(bool& bLoaded, const FSt
 	FLocalTimestampDirectoryVisitor Visitor(PlatformFile, DirectoriesToSkip, DirectoriesToSkip, false);
     if(PlatformFile.IterateDirectory(*FinalPath, Visitor))
     {
-        PrintLog(TEXT("Folder exists, now iterating over contents"));
+        PrintLog(TEXT("USoundVisComponent::BP_LoadAllSoundFileNamesFromHD; Folder exists, now iterating over contents"));
     }
     else
     {
-        PrintLog(TEXT("Folder did not exist or visitor returned null"));
+        PrintLog(TEXT("USoundVisComponent::BP_LoadAllSoundFileNamesFromHD; Folder did not exist or visitor returned null"));
     }
 
 	for (TMap<FString, FDateTime>::TIterator TimestampIt(Visitor.FileTimes); TimestampIt; ++TimestampIt)
@@ -573,8 +545,6 @@ void USoundVisComponent::BP_LoadAllSoundFileNamesFromHD(bool& bLoaded, const FSt
 
         const FString FilePath = TimestampIt.Key();
 		FString FileName = FPaths::GetCleanFilename(FilePath);
-
-        PrintLog(TEXT("Assessing file "));
         
         bool bShouldAddFile = true;
 
@@ -613,7 +583,7 @@ void USoundVisComponent::BP_StartCalculatingFrequencySpectrum(USoundWave* InSoun
 	// When the Sound Ref is NULL, better not start analyzing
 	if (InSoundWaveRef == nullptr) {
 
-		PrintError(TEXT("SoundWaveRef is a nullptr. Please load a Sound first!"));
+		PrintError(TEXT("USoundVisComponent::BP_CalculateFrequencySpectrum; SoundWaveRef is a nullptr. Please load a Sound first!"));
 		return;
 	}
 
@@ -647,7 +617,7 @@ void USoundVisComponent::BP_StartCalculatingFrequencySpectrum(USoundWave* InSoun
         HandleFrequencySpectrumCalculation();
 	}
 	else {
-		PrintWarning(TEXT("AudioComponent is already Playing. Please stop it first!"));
+		PrintWarning(TEXT("USoundVisComponent::BP_CalculateFrequencySpectrum; AudioComponent is already Playing. Please stop it first!"));
 	}
 }
 
@@ -669,7 +639,7 @@ void USoundVisComponent::BP_PauseCalculatingFrequencySpectrum()
 		SetComponentTickEnabled(true);
 	}
 	else {
-		PrintWarning(TEXT("You can't pause something, that is not playing!"));
+		PrintWarning(TEXT("USoundVisComponent::BP_PauseCalculatingFrequencySpectrum; You can't pause something, that is not playing!"));
 	}
 }
 
@@ -699,7 +669,7 @@ void USoundVisComponent::BP_StopCalculatingFrequencySpectrum()
 		SetComponentTickEnabled(false);
 	}
 	else {
-		PrintWarning(TEXT("You can't stop something, that is not playing or paused!"));
+		PrintWarning(TEXT("USoundVisComponent::BP_StopCalculatingFrequencySpectrum; You can't stop something, that is not playing or paused!"));
 	}
 }
 
@@ -723,7 +693,7 @@ void USoundVisComponent::BP_ResumeCalculatingFrequencySpectrum()
 		SetComponentTickEnabled(false);
 	}
 	else {
-		PrintWarning(TEXT("AudioComponent is Playing or not paused!"));
+		PrintWarning(TEXT("USoundVisComponent::BP_ResumeCalculatingFrequencySpectrum; AudioComponent is Playing or not paused!"));
 	}
 }
 

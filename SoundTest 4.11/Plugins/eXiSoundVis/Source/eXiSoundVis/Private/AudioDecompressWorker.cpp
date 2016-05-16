@@ -19,22 +19,6 @@ FAudioDecompressWorker::FAudioDecompressWorker(class USoundWave* InSoundWaveRef)
 {
 	if (GEngine && GEngine->GetMainAudioDevice())
 	{
-
-        //@NOTE: Experiment to deterine if the Compression name is valid
-        if(InSoundWaveRef->CompressionName.IsValid())
-        {
-            UE_LOG(LogeXiSoundVis, Warning, TEXT("FAudioDecompressWorker::FAudioDecompressionWorker; Compression name is valid."));
-        }
-        else
-        {
-            UE_LOG(LogeXiSoundVis, Warning, TEXT("FAudioDecompressWorker::FAudioDecompressionWorker; Compression name is invalid!"));
-        }
-        
-        
-        //@NOTE: Experiment to determine what the compression name is
-        FString CompressionNameString = InSoundWaveRef->CompressionName.ToString();
-        UE_LOG(LogeXiSoundVis, Warning, TEXT("FAudioDecompressWorker::FAudioDecompressWorker; InSoundWaveRef->CompressionName is %s"), *CompressionNameString);
-        
         
         //@NOTE: Maybe refer to this code block if the data is null when running?
 		AudioInfo = GEngine->GetMainAudioDevice()->CreateCompressedAudioInfo(SoundWaveRef);
@@ -112,16 +96,6 @@ uint32 FAudioDecompressWorker::Run()
 			// Extract the data
 			SoundWaveRef->SampleRate = QualityInfo.SampleRate;
 			SoundWaveRef->NumChannels = QualityInfo.NumChannels;
-
-            
-            UE_LOG(LogeXiSoundVis, Warning,TEXT("FAudioDecompressWorker::Run; Sample rate: %d"), QualityInfo.SampleRate );
-            
-            UE_LOG(LogeXiSoundVis, Warning,TEXT("FAudioDecompressWorker::Run; Number of channels: %d"), QualityInfo.NumChannels );
-            
-            UE_LOG(LogeXiSoundVis, Warning,TEXT("FAudioDecompressWorker::Run; SoundWave duration is: %f"), QualityInfo.Duration );
-            
-            UE_LOG(LogeXiSoundVis, Warning,TEXT("FAudioDecompressWorker::Run; SoundWave Sample data size is: %d"), QualityInfo.SampleDataSize );
-            
             
             //@NOTE: Why does this check need to be done? And what is the QualityInfo vs SoundWaveRef difference between Android and Mac?
 			if (QualityInfo.Duration > 0.0f)
@@ -131,16 +105,8 @@ uint32 FAudioDecompressWorker::Run()
             
 			const uint32 PCMBufferSize = SoundWaveRef->Duration * SoundWaveRef->SampleRate * SoundWaveRef->NumChannels;
             
-            //Should perhaps use one of the Procedural android functions instead here?
-			SoundWaveRef->CachedRealtimeFirstBuffer = new uint8[PCMBufferSize * 2];
-            
-            //@NOTE: Do we need to update the platform data after this perhaps?
-            //SoundWaveRef->UpdatePlatformData();
-            
-            
-            UE_LOG(LogeXiSoundVis, Warning,TEXT("FAudioDecompressWorker::Run; PCM Buffer size: %d"), PCMBufferSize );
-            
-            //Does this file support streaming?
+            //Initialize the buffer before reading data
+            SoundWaveRef->CachedRealtimeFirstBuffer = new uint8[PCMBufferSize * 2];
             
 			AudioInfo->SeekToTime(0.0f);
 			AudioInfo->ReadCompressedData(SoundWaveRef->CachedRealtimeFirstBuffer, false, PCMBufferSize * 2);
@@ -161,8 +127,10 @@ uint32 FAudioDecompressWorker::Run()
     {
         UE_LOG(LogeXiSoundVis, Warning, TEXT("FAudioDecompressWorker::Run; Audio info is null!"));
         
-        //Check if we can access the Game
         
+        //@TODO: Double check that we do not need to run this in any case, then remove
+        //Check if we can access the Game
+        /*
         if (GEngine && GEngine->GetMainAudioDevice())
         {
             //@NOTE: Maybe refer to this code block if the data is null when running?
@@ -179,7 +147,7 @@ uint32 FAudioDecompressWorker::Run()
         else
         {
             UE_LOG(LogeXiSoundVis, Warning, TEXT("FAudioDecompressWorker::Run; GetMainAudioDevice or GEngine not present!"));
-        }
+        }*/
         
     }
 
