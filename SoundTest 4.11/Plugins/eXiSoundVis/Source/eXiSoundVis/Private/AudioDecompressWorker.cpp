@@ -11,7 +11,7 @@
 FAudioDecompressWorker* FAudioDecompressWorker::Runnable = NULL;
 int32 FAudioDecompressWorker::ThreadCounter = 0;
 
-//Note: AudioInfo is null, shuffled around to see if we could instantiate it properly
+
 FAudioDecompressWorker::FAudioDecompressWorker(class USoundWave* InSoundWaveRef)
 	: Thread(NULL)
     , SoundWaveRef(InSoundWaveRef)
@@ -19,9 +19,7 @@ FAudioDecompressWorker::FAudioDecompressWorker(class USoundWave* InSoundWaveRef)
 {
 	if (GEngine && GEngine->GetMainAudioDevice())
 	{
-        
-        //@NOTE: Maybe refer to this code block if the data is null when running?
-		AudioInfo = GEngine->GetMainAudioDevice()->CreateCompressedAudioInfo(SoundWaveRef);
+        AudioInfo = GEngine->GetMainAudioDevice()->CreateCompressedAudioInfo(SoundWaveRef);
         UE_LOG(LogeXiSoundVis, Warning, TEXT("FAudioDecompressWorker::FAudioDecompressionWorker; AudioInfo constructed!"));
         if(AudioInfo == nullptr)
         {

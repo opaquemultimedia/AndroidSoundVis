@@ -169,8 +169,8 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
         //@TODO: Investigate whether this can be set back to FMemory::Memmove
         //@NOTE: New theory: FMemory is also acting up on Android?
 		// Copy compressed RawFile Data to the Address of the OGG Data of the SW File
-        //FMemory::Memmove(BulkData->Realloc(RawFile.Num()), RawFile.GetData(), RawFile.Num());
-        memmove(BulkData->Realloc(RawFile.Num()), RawFile.GetData(), RawFile.Num());
+        FMemory::Memmove(BulkData->Realloc(RawFile.Num()), RawFile.GetData(), RawFile.Num());
+        //memmove(BulkData->Realloc(RawFile.Num()), RawFile.GetData(), RawFile.Num());
         
 		// Unlock the BulkData again
 		BulkData->Unlock();
