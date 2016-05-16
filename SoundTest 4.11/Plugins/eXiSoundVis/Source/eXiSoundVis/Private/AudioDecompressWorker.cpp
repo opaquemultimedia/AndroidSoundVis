@@ -126,29 +126,6 @@ uint32 FAudioDecompressWorker::Run()
     else
     {
         UE_LOG(LogeXiSoundVis, Warning, TEXT("FAudioDecompressWorker::Run; Audio info is null!"));
-        
-        
-        //@TODO: Double check that we do not need to run this in any case, then remove
-        //Check if we can access the Game
-        /*
-        if (GEngine && GEngine->GetMainAudioDevice())
-        {
-            //@NOTE: Maybe refer to this code block if the data is null when running?
-            AudioInfo = GEngine->GetMainAudioDevice()->CreateCompressedAudioInfo(SoundWaveRef);
-            if(AudioInfo == nullptr)
-            {
-                UE_LOG(LogeXiSoundVis, Warning, TEXT("FAudioDecompressWorker::Run; AudioInfo could not be constructed even when GEngine and GetMainAudioDevice are present!"));
-            }
-            else
-            {
-                UE_LOG(LogeXiSoundVis, Warning, TEXT("FAudioDecompressWorker::Run; Audio info reconstructed at runtime!"));
-            }
-        }
-        else
-        {
-            UE_LOG(LogeXiSoundVis, Warning, TEXT("FAudioDecompressWorker::Run; GetMainAudioDevice or GEngine not present!"));
-        }*/
-        
     }
 
 	return 0;

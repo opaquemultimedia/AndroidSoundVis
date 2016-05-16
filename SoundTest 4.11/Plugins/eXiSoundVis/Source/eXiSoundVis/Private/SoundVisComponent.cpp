@@ -23,7 +23,6 @@
 USoundVisComponent::USoundVisComponent()
 {
 	AudioComponent = CreateDefaultSubobject<UAudioComponent>(FName("AudioComponent"));
-
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
@@ -72,7 +71,6 @@ void AndroidFolderSearch(const FString& InFilePath, TArray<FString>& OutSoundFil
                 FileName.FString::Split(FString("."), &FileName, nullptr, ESearchCase::IgnoreCase);
                 OutSoundFileNamesWithoutPath.Add(FileName);
             }
-            
         }
         (void) closedir (Directory);
     }
@@ -117,7 +115,6 @@ bool AndroidLoadFileToArray(TArray<uint8>& Result, FString FilePath)
 
 void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 {
-    
 	// Create new SoundWave Object
 	CompressedSoundWaveRef = NewObject<USoundWave>(USoundWave::StaticClass());
 
@@ -179,8 +176,8 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 		BulkData->Unlock();
 	}
 
-	if (!bLoaded) {
-
+	if (!bLoaded)
+    {
 		PrintError(TEXT("USoundVisComponent::LoadSoundFileFromHD; Something went wrong while loading the Sound Data!"));
 		return;
 	}
@@ -191,7 +188,6 @@ void USoundVisComponent::LoadSoundFileFromHD(const FString& InFilePath)
 
 bool USoundVisComponent::FillSoundWaveInfo(USoundWave* InSoundWave, TArray<uint8>* InRawFile)
 {
-    
     if(InRawFile != nullptr)
     {
         PrintLog(TEXT("USoundVisComponent::FillSoundWaveInfo; SoundWave pointer is not nullpointer."));
@@ -238,14 +234,14 @@ bool USoundVisComponent::FillSoundWaveInfo(USoundWave* InSoundWave, TArray<uint8
 
 void USoundVisComponent::GetPCMDataFromFile(USoundWave* InSoundWave, FByteBulkData* BulkData)
 {
-	if (InSoundWave == nullptr)	{
-		
+	if (InSoundWave == nullptr)
+    {
 		PrintError(TEXT("USoundVisComponent::GetPCMDataFromFile; SoundWave pointer is a nullptr!"));
 		return;
 	}
 
-	if (InSoundWave->NumChannels < 1 || InSoundWave->NumChannels > 2) {
-		
+	if (InSoundWave->NumChannels < 1 || InSoundWave->NumChannels > 2)
+    {
 		PrintError(TEXT("USoundVisComponent::GetPCMDataFromFile; SoundWave Object has not the right amount of Channels. Plugin only supports 1 or 2!"));
 		return;
 	}
@@ -255,8 +251,8 @@ void USoundVisComponent::GetPCMDataFromFile(USoundWave* InSoundWave, FByteBulkDa
 		// Get a Pointer to the Main Audio Device
 		FAudioDevice* AudioDevice = GEngine->GetMainAudioDevice();
 
-		if (AudioDevice) {
-
+		if (AudioDevice)
+        {
             //@Note: Attempt to initialize with bulk data rather than relying on streaming (?)
 			InSoundWave->InitAudioResource(*BulkData);
             
@@ -264,10 +260,9 @@ void USoundVisComponent::GetPCMDataFromFile(USoundWave* InSoundWave, FByteBulkDa
 				
 			// Creates a new DecompressWorker and starts it
 			InitNewDecompressTask(InSoundWave);
-            
 		}
-		else {
-
+		else
+        {
 			PrintError(TEXT("USoundVisComponent::GetPCMDataFromFile; Couldn't get a valid Pointer to the Main AudioDevice!"));
 			return;
 		}
@@ -304,8 +299,8 @@ void USoundVisComponent::CalculateFrequencySpectrum(USoundWave* InSoundWaveRef, 
 			// Actual amount of samples we gonna read
 			int32 SamplesToRead = LastSample - FirstSample;
 
-			if (SamplesToRead < 0) {
-
+			if (SamplesToRead < 0)
+            {
 				PrintError(TEXT("USoundVisComponent::CalculateFrequencySpectrum; Number of SamplesToRead is < 0!"));
 				return;
 			}
@@ -313,7 +308,8 @@ void USoundVisComponent::CalculateFrequencySpectrum(USoundWave* InSoundWaveRef, 
 			// Shift the window enough so that we get a PowerOfTwo. FFT works better with that
 			int32 PoT = 2;
 
-			while (SamplesToRead > PoT) {
+			while (SamplesToRead > PoT)
+            {
 				PoT *= 2;
 			}
 				
@@ -400,11 +396,13 @@ void USoundVisComponent::CalculateFrequencySpectrum(USoundWave* InSoundWaveRef, 
 				KISS_FFT_FREE(Output[ChannelIndex]);
 			}
 		}
-		else {
+		else
+        {
 			PrintError(TEXT("USoundVisComponent::CalculateFrequencySpectrum; InSoundVisData.PCMData is a nullptr!"));
 		}
 	}
-	else {
+	else
+    {
 		PrintError(TEXT("USoundVisComponent::CalculateFrequencySpectrum; Number of Channels is < 0!"));
 	}
 }
@@ -443,7 +441,8 @@ void USoundVisComponent::InitNewDecompressTask(USoundWave* InSoundWaveRef)
 		// Init new Worker and pass the SoundWaveRef to decompress it
 		FAudioDecompressWorker::Runnable->InitializeWorker(InSoundWaveRef);
 	}
-	else {
+	else
+    {
 		PrintLog(TEXT("USoundVisComponent::GetFFTInValue; Worker not finished!"));
 	}
 }
@@ -461,7 +460,8 @@ void USoundVisComponent::Notify_SoundDecompressed()
 
 		PrintLog(TEXT("USoundVisComponent::GetFFTInValue; Worker finished!"));
 	}
-	else {
+	else
+    {
 		PrintLog(TEXT("USoundVisComponent::GetFFTInValue; Worker is working!"));
 	}
 }
@@ -581,8 +581,8 @@ void USoundVisComponent::BP_CalculateFrequencySpectrum(USoundWave* InSoundWaveRe
 void USoundVisComponent::BP_StartCalculatingFrequencySpectrum(USoundWave* InSoundWaveRef, const float InSegmentLength)
 {
 	// When the Sound Ref is NULL, better not start analyzing
-	if (InSoundWaveRef == nullptr) {
-
+	if (InSoundWaveRef == nullptr)
+    {
 		PrintError(TEXT("USoundVisComponent::BP_CalculateFrequencySpectrum; SoundWaveRef is a nullptr. Please load a Sound first!"));
 		return;
 	}
@@ -616,7 +616,8 @@ void USoundVisComponent::BP_StartCalculatingFrequencySpectrum(USoundWave* InSoun
 		//@NOTE: Test to see if player is slow on Android outside of calculation
         HandleFrequencySpectrumCalculation();
 	}
-	else {
+	else
+    {
 		PrintWarning(TEXT("USoundVisComponent::BP_CalculateFrequencySpectrum; AudioComponent is already Playing. Please stop it first!"));
 	}
 }
@@ -638,7 +639,8 @@ void USoundVisComponent::BP_PauseCalculatingFrequencySpectrum()
 		// Start the tick, so we can check when the Player is back in the game
 		SetComponentTickEnabled(true);
 	}
-	else {
+	else
+    {
 		PrintWarning(TEXT("USoundVisComponent::BP_PauseCalculatingFrequencySpectrum; You can't pause something, that is not playing!"));
 	}
 }
@@ -668,7 +670,8 @@ void USoundVisComponent::BP_StopCalculatingFrequencySpectrum()
 		// Stop the Tick Function
 		SetComponentTickEnabled(false);
 	}
-	else {
+	else
+    {
 		PrintWarning(TEXT("USoundVisComponent::BP_StopCalculatingFrequencySpectrum; You can't stop something, that is not playing or paused!"));
 	}
 }
@@ -692,7 +695,8 @@ void USoundVisComponent::BP_ResumeCalculatingFrequencySpectrum()
 		// Stop the Tick Function
 		SetComponentTickEnabled(false);
 	}
-	else {
+	else
+    {
 		PrintWarning(TEXT("USoundVisComponent::BP_ResumeCalculatingFrequencySpectrum; AudioComponent is Playing or not paused!"));
 	}
 }
@@ -754,18 +758,24 @@ void USoundVisComponent::BP_GetAverageFrequencyValueInRange(USoundWave* InSoundW
 	// Init the Return Value
 	OutAverageFrequency = 0.0f;
 
-	if (InSoundWave == nullptr)	
-		return;
+    if (InSoundWave == nullptr)
+    {
+        return;
+    }
 
-	if (InStartFrequence >= InEndFrequence || InStartFrequence < 0 || InEndFrequence > 22000) 
+	if (InStartFrequence >= InEndFrequence || InStartFrequence < 0 || InEndFrequence > 22000)
+    {
 		return;
-
+    }
+    
 	int32 FStart = (int32)(InStartFrequence  * InFrequencies.Num() * 2 / InSoundWave->SampleRate);
 	int32 FEnd = (int32)(InEndFrequence * InFrequencies.Num() * 2 / InSoundWave->SampleRate);
 
 	if (FStart < 0 || FEnd >= InFrequencies.Num())
+    {
 		return;
-
+    }
+    
 	int32 NumberOfFrequencies = 0;
 
 	float ValueSum = 0.0f;
