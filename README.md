@@ -13,5 +13,5 @@ This repository contains a modified version of the plugin, as well as the exampl
 ### License
 
 This software is licensed under [Apache 2.0.](http://www.apache.org/licenses/LICENSE-2.0)
-The eXiSoundVis plugin is licensed under the MIT License and is copyright Cederic Neukirchen.
-The Kiss-FFT software package, copyright Mark Borgerding, is provided under a modified version of the BSD license (see [here]( https://github.com/itdaniher/kissfft/blob/master/COPYING)) for full license.
+The eXiSoundVis plugin is licensed under the MIT License and is copyright Cederic Neukirchen 2015.
+The Kiss-FFT software package, copyright Mark Borgerding 2003-2010, is provided under a modified version of the BSD license (see [here]( https://github.com/itdaniher/kissfft/blob/master/COPYING)) for full license. Please note that this software is not endorsed by the authors of the included open-source packages or plugins.
