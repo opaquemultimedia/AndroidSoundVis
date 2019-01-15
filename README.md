@@ -1,3 +1,7 @@
+# Deprecation notice 
+
+Thanks for your interest in the Android eXiSoundVis plugin. This repository is no longer maintained, and has been archived to allow for future reference and forking by the developer community.
+
 # Android eXiSoundVis Plugin
 
 This plugin is an implementation of the [eXiSoundVis plugin for UE4](https://github.com/eXifreXi/eXiSoundVis) which has been altered to allow for use on Android devices. It uses an implementation of Kiss-FFT (see [here](https://github.com/itdaniher/kissfft) for an implementation on Github), and allows for music visualization on the Android platform in real time.
